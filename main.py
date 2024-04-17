@@ -16,9 +16,12 @@ GRAY = (200, 200, 200)
 GREEN = (0, 255, 0)
 YELLOW = (255, 255, 0)
 RED = (255, 0, 0)
+BLUE = (0, 0, 255)
+PINK = (255, 192, 203)  # Розовый
 
 # Новый шрифт для кнопок
 font = pygame.font.SysFont(None, 50)
+
 
 # Класс кнопки
 class Button:
@@ -49,27 +52,60 @@ class Button:
             self.hovered = False
 
 
-# Загрузка изображения
 def load_image(filename):
     return pygame.image.load(os.path.join("img", filename)).convert_alpha()
 
 
-# Основной игровой цикл
-def main():
-    # Загрузка изображения
-    menu_image = load_image("main_menu3.jpg")
+def draw_game_map(surface, color):
+    # Очистим экран
+    surface.fill(color)
 
+    # Нарисуем стены
+    wall_color = BLACK
+    wall_thickness = 6
+    wall_rects = [
+        pygame.Rect(50, 50, 500, wall_thickness),
+        pygame.Rect(50, 50, wall_thickness, 500),
+        pygame.Rect(550 - wall_thickness, 50, wall_thickness, 500),
+        pygame.Rect(50, 550 - wall_thickness, 500, wall_thickness),
+        # Дополнительные стены или лабиринт можно нарисовать по вашему усмотрению
+    ]
+    for wall_rect in wall_rects:
+        pygame.draw.rect(surface, wall_color, wall_rect)
+
+    # Нарисуем точки
+    dot_color = WHITE
+    dot_radius = 3
+    dot_positions = [
+        (100, 100), (200, 100), (300, 100), (400, 100),
+        (100, 200), (200, 200), (300, 200), (400, 200),
+        (100, 300), (200, 300), (300, 300), (400, 300),
+        (100, 400), (200, 400), (300, 400), (400, 400),
+        # Дополнительные точки можно расставить по вашему усмотрению
+    ]
+    for dot_pos in dot_positions:
+        pygame.draw.circle(surface, dot_color, dot_pos, dot_radius)
+
+
+def draw_map(color):
+    screen.fill(color)
+    pygame.display.flip()
+
+
+def game_screen(color):
+    screen.fill(color)
+    draw_game_map(screen, color)
+    pygame.display.flip()
+    print("Game started with color:", color)
+
+
+def main():
     # Создание кнопок
     start_button = Button(200, 300, 200, 50, "Start", GREEN)
     top_scores_button = Button(200, 400, 200, 50, "Top scores", YELLOW)
     exit_button = Button(200, 500, 200, 50, "Exit", RED)
 
-    # Загрузка музыки
-    pygame.mixer.music.load("music/menu_music.mp3")
-    pygame.mixer.music.play(-1)  # -1 означает воспроизведение бесконечное количество раз
-
     while True:
-        # Обработка событий
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -77,28 +113,46 @@ def main():
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if start_button.is_clicked(pygame.mouse.get_pos()):
                     print("Start button clicked")
+                    # Создание кнопок "Pink" и "Blue" после нажатия кнопки "Start"
+                    blue_map_button = Button(200, 200, 100, 50, "Blue", BLUE)
+                    pink_map_button = Button(310, 200, 100, 50, "Pink", PINK)
+                    while True:
+                        for event in pygame.event.get():
+                            if event.type == pygame.MOUSEBUTTONDOWN:
+                                if blue_map_button.is_clicked(pygame.mouse.get_pos()):
+                                    print("Blue map selected")
+                                    game_screen(BLUE)
+                                    break
+                                elif pink_map_button.is_clicked(pygame.mouse.get_pos()):
+                                    print("Pink map selected")
+                                    game_screen(PINK)
+                                    break
+                        blue_map_button.update(pygame.mouse.get_pos())
+                        pink_map_button.update(pygame.mouse.get_pos())
+                        screen.fill(WHITE)
+                        screen.blit(menu_background, (0, 0))
+                        blue_map_button.draw(screen)
+                        pink_map_button.draw(screen)
+                        pygame.display.flip()
                 elif top_scores_button.is_clicked(pygame.mouse.get_pos()):
                     print("Top scores button clicked")
                 elif exit_button.is_clicked(pygame.mouse.get_pos()):
                     pygame.quit()
                     sys.exit()
-
-        # Обновление состояния кнопок
         start_button.update(pygame.mouse.get_pos())
         top_scores_button.update(pygame.mouse.get_pos())
         exit_button.update(pygame.mouse.get_pos())
 
-        # Отрисовка
         screen.fill(WHITE)
-        screen.blit(menu_image, (0, 0))  # Отображение изображения меню
+        screen.blit(menu_background, (0, 0))
         start_button.draw(screen)
         top_scores_button.draw(screen)
         exit_button.draw(screen)
         pygame.display.flip()
 
 
-# Запуск игры
 if __name__ == "__main__":
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("Pacman Menu")
+    menu_background = load_image("main_menu3.jpg")
     main()
