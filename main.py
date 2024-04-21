@@ -5,8 +5,14 @@ from inky import Inky, Inky_directions
 from clyde import Clyde, Clyde_directions
 import sys
 from pygame.image import load
+import sqlite3
+conn = sqlite3.connect('top_scores.db')
+c = conn.cursor()
 
-
+# Create a table if it doesn't exist
+c.execute('''CREATE TABLE IF NOT EXISTS scores
+             (score INTEGER)''')
+conn.commit()
 
 
 black = (0, 0, 0)
@@ -58,18 +64,28 @@ bright_green = (0, 255, 0)
 bright_yellow = (255, 255, 0)
 bright_red = (255, 0, 0)
 def save_score(score):
-    with open("top_scores.txt", "a") as file:
-        file.write(str(score) + "\n")
+    # Insert score into the database
+    c.execute("INSERT INTO scores (score) VALUES (?)", (score,))
+    conn.commit()
+
 
 def load_scores():
-    try:
-        with open("top_scores.txt", "r") as file:
-            scores = [int(score.strip()) for score in file.readlines()]
-            return sorted(scores, reverse=True)
-    except FileNotFoundError:
-        return []
+    # Retrieve scores from the database and return as a list
+    c.execute("SELECT score FROM scores ORDER BY score DESC")
+    scores = c.fetchall()
+    return [score[0] for score in scores]
+
+
+def update_top_scores(score):
+    # Load scores and check if the new score should be added
+    scores = load_scores()
+    if not scores or len(scores) < 5 or score > scores[-1]:
+        save_score(score)
+        show_notification("New top score achieved!")
+
 
 def show_top_scores():
+    # Load and print the top scores
     scores = load_scores()
     if not scores:
         print("No top scores yet.")
@@ -78,11 +94,10 @@ def show_top_scores():
         for i, score in enumerate(scores[:5], 1):
             print(f"{i}. {score}")
 
-def update_top_scores(score):
-    scores = load_scores()
-    if not scores or len(scores) < 5 or score > scores[-1]:
-        save_score(score)
-        show_notification("New top score achieved!")
+
+# Close the connection when done
+def close_connection():
+    conn.close()
 
 def show_notification(message):
     print(message)
