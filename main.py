@@ -9,11 +9,9 @@ import sqlite3
 conn = sqlite3.connect('top_scores.db')
 c = conn.cursor()
 
-# Create a table if it doesn't exist
 c.execute('''CREATE TABLE IF NOT EXISTS scores
              (score INTEGER)''')
 conn.commit()
-
 
 black = (0, 0, 0)
 white = (255, 255, 255)
@@ -25,30 +23,16 @@ yellow = (255, 255, 0)
 cherry_color = (3, 0, 0)
 
 pygame.init()
-
-
 screen = pygame.display.set_mode([606, 606])
-
-
 pygame.display.set_caption('Pacman')
-
 background = pygame.Surface(screen.get_size())
 background = background.convert()
 background.fill(black)
-
 clock = pygame.time.Clock()
-
-# Initialize font
 pygame.font.init()
 font = pygame.font.Font("freesansbold.ttf", 24)
-
-# Call the main_menu function with the screen argument
-
-
-
 pack = pygame.image.load('img/packman.png')
 pygame.display.set_icon(pack)
-
 pygame.mixer.init()
 pygame.mixer.music.load('music/menu_music.mp3')
 pygame.mixer.music.play(-1, 0.0)
@@ -57,9 +41,6 @@ def draw_text(text, font, color, surface, x, y):
     text_rect = text_obj.get_rect()
     text_rect.topleft = (x, y)
     surface.blit(text_obj, text_rect)
-
-
-# Определение ярких цветов
 bright_green = (0, 255, 0)
 bright_yellow = (255, 255, 0)
 bright_red = (255, 0, 0)
@@ -84,18 +65,28 @@ def update_top_scores(score):
         show_notification("New top score achieved!")
 
 
-def show_top_scores():
-    # Load and print the top scores
+def show_top_scores_screen(screen):
     scores = load_scores()
-    if not scores:
-        print("No top scores yet.")
-    else:
-        print("Top Scores:")
-        for i, score in enumerate(scores[:5], 1):
-            print(f"{i}. {score}")
+    background_image = pygame.image.load("img/top.jpg").convert()
+    screen.blit(background_image, (0, 0))
+    draw_text('Top Scores', font, white, screen, 220, 20)
+    y = 70
+    for i, score in enumerate(scores[:5], 1):
+        if i == 1:
+            color = (255, 215, 0)
+        elif i == 2:
+            color = (128, 128, 128)
+        elif i == 3:
+            color = (205, 127, 50)
+        else:
+            color = white
+        draw_text(f"{i}. {score}", font, color, screen, 250, y)
+        y += 30
+
+    draw_text('Press ESC to return to main menu', font, white, screen, 150, 500)
+    pygame.display.update()
 
 
-# Close the connection when done
 def close_connection():
     conn.close()
 
@@ -400,17 +391,27 @@ def start_game():
                 doNext("Game Over", 235, all_sprites_list, block_list, monsta_list, pacman_collide, wall_list, gate, score)
             pygame.display.flip()
             clock.tick(10)
+
     def doNext(message, left, all_sprites_list, block_list, monsta_list, pacman_collide, wall_list, gate, score):
+        # Проверяем, установил ли игрок новый рекорд
+        update_top_scores(score)
+        top_scores = load_scores()
+        new_record_index = -1
+
+        # Проверяем, попал ли игрок в топ-5 и на какой позиции
+        for i, top_score in enumerate(top_scores[:5]):  # Limit to top 5 scores
+            if score >= top_score:
+                new_record_index = i
+                break
+
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
-                        update_top_scores(score)
                         pygame.quit()
                     if event.key == pygame.K_RETURN:
-                        update_top_scores(score)
                         del all_sprites_list
                         del block_list
                         del monsta_list
@@ -418,18 +419,29 @@ def start_game():
                         del wall_list
                         del gate
                         startGame()
+
             w = pygame.Surface((400, 200))
             w.set_alpha(10)
             w.fill((128, 128, 128))
             screen.blit(w, (100, 200))
             text1 = font.render(message, True, white)
             screen.blit(text1, [left, 233])
-            text2 = font.render("To play again, press ENTER.", True, white)
-            screen.blit(text2, [135, 303])
-            text3 = font.render("To quit, press ESCAPE.", True, white)
-            screen.blit(text3, [165, 333])
+            if new_record_index >= 0 and new_record_index < 5:
+                text2 = font.render("            New top score!", True, white)
+                screen.blit(text2, [135, 263])
+                text3 = font.render(f"            You are now {new_record_index + 1}!", True, white)
+                screen.blit(text3, [135, 293])
+            else:
+                text2 = font.render("   You are under top-5.", True, white)
+                screen.blit(text2, [155, 263])
+
+            text4 = font.render("To play again, press ENTER.", True, white)
+            screen.blit(text4, [135, 323])
+            text5 = font.render("To quit, press ESCAPE.", True, white)
+            screen.blit(text5, [165, 353])
             pygame.display.flip()
             clock.tick(10)
+
     startGame()
 def main_menu(screen):
     background_image = pygame.image.load("img/main_menu5.jpg").convert()
@@ -467,13 +479,29 @@ def main_menu(screen):
                 if play_button.collidepoint(mouse_pos):
                     start_game()
                 elif top_scores_button.collidepoint(mouse_pos):
-                    show_top_scores()
+                    show_top_scores_screen(screen)
+                    pygame.display.update()
+                    wait_for_key()
                 elif exit_button.collidepoint(mouse_pos):
                     pygame.quit()
                     sys.exit()
 
         pygame.display.update()
 
+def wait_for_key():
+    waiting = True
+    while waiting:
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                waiting = False
+
+
 
 main_menu(screen)
-pygame.quit()
+if __name__ == "__main__":
+    pygame.init()
+    screen = pygame.display.set_mode([606, 606])
+    pygame.display.set_caption('Pacman')
+    main_menu(screen)
+    close_connection()
+    pygame.quit()
