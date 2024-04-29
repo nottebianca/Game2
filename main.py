@@ -399,7 +399,7 @@ def start_game():
 
     def startGame():
         all_sprites_list = pygame.sprite.RenderPlain()
-
+        score = 0
         monsta_list = pygame.sprite.RenderPlain()
         pacman_collide = pygame.sprite.RenderPlain()
         wall_list = setupRoomOne(all_sprites_list)
@@ -494,6 +494,9 @@ def start_game():
         done = False
         i = 0
         while done == False:
+            blocks_hit_list = pygame.sprite.spritecollide(Pacman, block_list, True)
+            if len(blocks_hit_list) > 0:
+                score += 1
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     done = True
@@ -658,6 +661,50 @@ def show_instructions(screen):
 
     draw_text("Press ESC to return to main menu", font, white, screen, 150, 500)
     pygame.display.update()
+def show_controls_settings(screen):
+    background_image = pygame.image.load("img/sound_settings.jpg").convert()
+
+    controls_arrows_button = pygame.Rect(200, 200, 200, 50)
+    controls_wasd_button = pygame.Rect(200, 270, 200, 50)
+    green = (0, 255, 0)
+    red = (255, 0, 0)
+    while True:
+        screen.blit(background_image, (0, 0))
+        draw_text("Controls Settings", font, white, screen, 120, 20)
+
+        mouse_pos = pygame.mouse.get_pos()
+        controls_arrows_highlighted = controls_arrows_button.collidepoint(mouse_pos)
+        controls_wasd_highlighted = controls_wasd_button.collidepoint(mouse_pos)
+        bright_red = (220, 20, 60)
+        bright_green = (0, 128, 0)
+        controls_arrows_color = bright_green if controls_arrows_highlighted else green
+        controls_wasd_color = bright_red if controls_wasd_highlighted else red
+
+        pygame.draw.rect(screen, controls_arrows_color, controls_arrows_button)
+        pygame.draw.rect(screen, controls_wasd_color, controls_wasd_button)
+
+        draw_text("Arrows", font, black, screen, 270, 210)
+        draw_text("WASD", font, black, screen, 280, 280)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if controls_arrows_button.collidepoint(mouse_pos):
+                    save_settings(load_fruit_choice(), "arrows")
+                    main_menu(screen)
+                    return
+                elif controls_wasd_button.collidepoint(mouse_pos):
+                    save_settings(load_fruit_choice(), "WASD")
+                    main_menu(screen)
+                    return
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    main_menu(screen)
+                    return
+
+        pygame.display.update()
 
 
 def main_menu(screen):
