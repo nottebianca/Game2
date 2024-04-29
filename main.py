@@ -19,15 +19,11 @@ c.execute(
 conn.commit()
 
 
+
+
+
 black = (0, 0, 0)
 white = (255, 255, 255)
-blue = (0, 0, 255)
-green = (0, 255, 0)
-red = (255, 0, 0)
-purple = (255, 0, 255)
-yellow = (255, 255, 0)
-cherry_color = (3, 0, 0)
-
 
 pygame.init()
 screen = pygame.display.set_mode([606, 606])
@@ -56,12 +52,6 @@ def draw_text(text, font, color, surface, x, y):
     text_rect.topleft = (x, y)
     surface.blit(text_obj, text_rect)
 
-pink = (255, 105, 180)
-bright_green = (0, 128, 0)
-bright_yellow = (255, 215, 0)
-bright_red = (220, 20, 60)
-bright_blue = (65, 105, 225)
-bright_pink = (255, 192, 203)
 
 def save_score(score):
     c.execute("INSERT INTO scores (score) VALUES (?)", (score,))
@@ -113,6 +103,47 @@ def close_connection():
 def show_notification(message):
     print(message)
 
+def show_sound_settings(screen):
+    background_image = pygame.image.load("img/sound_settings.jpg").convert()
+
+    sound_on_button = pygame.Rect(200, 200, 200, 50)
+    sound_off_button = pygame.Rect(200, 270, 200, 50)
+    green = (0, 255, 0)
+    red = (255, 0, 0)
+    while True:
+        screen.blit(background_image, (0, 0))
+        draw_text("Sound Settings", font, white, screen, 170, 20)
+
+        mouse_pos = pygame.mouse.get_pos()
+        sound_on_highlighted = sound_on_button.collidepoint(mouse_pos)
+        sound_off_highlighted = sound_off_button.collidepoint(mouse_pos)
+        bright_red = (220, 20, 60)
+        bright_green = (0, 128, 0)
+        sound_on_color = bright_green if sound_on_highlighted else green
+        sound_off_color = bright_red if sound_off_highlighted else red
+
+        pygame.draw.rect(screen, sound_on_color, sound_on_button)
+        pygame.draw.rect(screen, sound_off_color, sound_off_button)
+
+        draw_text("Sound On", font, black, screen, 250, 210)
+        draw_text("Sound Off", font, black, screen, 250, 280)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if sound_on_button.collidepoint(mouse_pos):
+                    pygame.mixer.music.unpause()  # Включаем звук
+                elif sound_off_button.collidepoint(mouse_pos):
+                    pygame.mixer.music.pause()  # Выключаем звук
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    main_menu(screen)
+                    return
+
+        pygame.display.update()
+
 
 def save_settings(choice):
     conn = sqlite3.connect("settings.db")
@@ -127,7 +158,6 @@ def save_settings(choice):
     conn.commit()
     conn.close()
 
-    # Обновление изображений всех блоков клубники
     for block in block_list:
         if fruit_choice == "Strawberry":
             block.image = pygame.transform.scale(strawberry_image, (10, 10))
@@ -165,7 +195,8 @@ def show_settings_screen(screen):
         mouse_pos = pygame.mouse.get_pos()
         cherry_highlighted = cherry_button.collidepoint(mouse_pos)
         strawberry_highlighted = strawberry_button.collidepoint(mouse_pos)
-
+        red = (255, 0, 0)
+        bright_red = (220, 20, 60)
         cherry_color = bright_red if cherry_highlighted else red
         strawberry_color = bright_red if strawberry_highlighted else red
 
@@ -192,7 +223,10 @@ def show_settings_screen(screen):
         pygame.display.update()
 
 
+
 def start_game():
+    black = (0, 0, 0)
+    white = (255, 255, 255)
     print("Starting the game...")
 
     class Wall(pygame.sprite.Sprite):
@@ -246,7 +280,7 @@ def start_game():
             [120, 540, 126, 6],
             [360, 540, 126, 6],
         ]
-
+        blue = (0, 0, 255)
         for item in walls:
             wall = Wall(item[0], item[1], item[2], item[3], blue)
             wall_list.add(wall)
@@ -430,6 +464,7 @@ def start_game():
                         for wall in wall_list
                     )
                     if not is_wall:
+                        cherry_color = (3, 0, 0)
                         block = Block(cherry_color, 4, 4)
                         pygame.draw.ellipse(block.image, cherry_color, [0, 0, 606, 606])
                         block_image = pygame.transform.scale(strawberry_image, (10, 10))
@@ -454,7 +489,7 @@ def start_game():
                         block_list.add(block)
                         all_sprites_list.add(block)
 
-        bll = len(block_list)
+        bll = len(block_list) - 1
         score = 0
         done = False
         i = 0
@@ -509,6 +544,7 @@ def start_game():
             gate.draw(screen)
             all_sprites_list.draw(screen)
             monsta_list.draw(screen)
+            red = (255, 0, 0)
             text = font.render("Score: " + str(score) + "/" + str(bll), True, red)
             screen.blit(text, [10, 10])
             if score == bll:
@@ -604,6 +640,7 @@ def start_game():
 
 
 def show_instructions(screen):
+    white = (255, 255, 255)
     background_image = pygame.image.load("img/instructions.jpg").convert()
     screen.blit(background_image, (0, 0))
     draw_text("Instructions", font, white, screen, 220, 200)
@@ -628,38 +665,57 @@ def main_menu(screen):
 
     while True:
         screen.blit(background_image, (0, 0))
+        black = (0, 0, 0)
+        white = (255, 255, 255)
         draw_text("Main menu", font, white, screen, 20, 20)
-
+        purple = (138, 43, 226)
+        bright_purple = (186, 85, 211)
         play_button = pygame.Rect(200, 200, 200, 50)
         top_scores_button = pygame.Rect(200, 270, 200, 50)
         instructions_button = pygame.Rect(200, 340, 200, 50)
         settings_button = pygame.Rect(200, 410, 200, 50)
-        exit_button = pygame.Rect(200, 480, 200, 50)
+        sound_settings_button = pygame.Rect(200, 480, 200, 50)
+        exit_button = pygame.Rect(200, 550, 200, 50)
+        blue = (0, 0, 255)
+        green = (0, 255, 0)
+        red = (255, 0, 0)
+        purple = (255, 0, 255)
+        yellow = (255, 255, 0)
+        pink = (255, 105, 180)
+        bright_green = (0, 128, 0)
+        bright_yellow = (255, 215, 0)
+        bright_red = (220, 20, 60)
+        bright_blue = (65, 105, 225)
+        bright_pink = (255, 192, 203)
 
         mouse_pos = pygame.mouse.get_pos()
         play_highlighted = play_button.collidepoint(mouse_pos)
         top_scores_highlighted = top_scores_button.collidepoint(mouse_pos)
         instructions_highlighted = instructions_button.collidepoint(mouse_pos)
         settings_highlighted = settings_button.collidepoint(mouse_pos)
+        sound_settings_highlighted = sound_settings_button.collidepoint(mouse_pos)
         exit_highlighted = exit_button.collidepoint(mouse_pos)
 
         play_color = bright_green if play_highlighted else green
         top_scores_color = bright_yellow if top_scores_highlighted else yellow
         instructions_color = bright_blue if instructions_highlighted else blue
         settings_color = bright_pink if settings_highlighted else pink
+        sound_settings_color = bright_purple if sound_settings_highlighted else purple
         exit_color = bright_red if exit_highlighted else red
 
         pygame.draw.rect(screen, play_color, play_button)
         pygame.draw.rect(screen, top_scores_color, top_scores_button)
         pygame.draw.rect(screen, instructions_color, instructions_button)
         pygame.draw.rect(screen, settings_color, settings_button)
+        pygame.draw.rect(screen, sound_settings_color, sound_settings_button)
         pygame.draw.rect(screen, exit_color, exit_button)
 
         draw_text("Start", font, black, screen, 270, 210)
         draw_text("Top scores", font, black, screen, 240, 280)
         draw_text("Instructions", font, black, screen, 240, 350)
         draw_text("Settings", font, black, screen, 260, 420)
-        draw_text("Exit", font, black, screen, 275, 490)
+        draw_text("Sound Settings", font, black, screen, 205, 490)
+        draw_text("Exit", font, black, screen, 270, 560)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -678,11 +734,13 @@ def main_menu(screen):
                     wait_for_key()
                 elif settings_button.collidepoint(mouse_pos):
                     show_settings_screen(screen)
+                elif sound_settings_button.collidepoint(mouse_pos):
+                    show_sound_settings(screen)
                 elif exit_button.collidepoint(mouse_pos):
                     pygame.quit()
-                    sys.exit()
 
         pygame.display.update()
+
 
 
 def wait_for_key():
