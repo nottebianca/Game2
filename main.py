@@ -1,3 +1,5 @@
+import random
+
 import pygame
 from pinky import Pinky, Pinky_directions
 from blinky import Blinky, Blinky_directions
@@ -13,6 +15,7 @@ c.execute('''CREATE TABLE IF NOT EXISTS scores
              (score INTEGER)''')
 conn.commit()
 
+
 black = (0, 0, 0)
 white = (255, 255, 255)
 blue = (0, 0, 255)
@@ -21,6 +24,8 @@ red = (255, 0, 0)
 purple = (255, 0, 255)
 yellow = (255, 255, 0)
 cherry_color = (3, 0, 0)
+bright_blue = (0, 0, 255)
+
 
 pygame.init()
 screen = pygame.display.set_mode([606, 606])
@@ -302,17 +307,36 @@ def start_game():
         all_sprites_list.add(Clyde)
         cherry_image = load('img/cherry_small.png').convert()
         cherry_image.set_colorkey(white)
+        strawberry_image = pygame.image.load('img/strawberry_small.png').convert()
+        strawberry_image.set_colorkey(white)
+
+        # Вместо некоторых вишен, добавляем клубнику в случайно выбранные места
+        if block_list:
+            for _ in range(5):
+                cherry = random.choice(block_list.sprites())  # Выбираем случайную вишню из списка
+                cherry.rect.x = random.randint(0, 570)  # Случайная координата x
+                cherry.rect.y = random.randint(0, 570)  # Случайная координата y
+                cherry.image = strawberry_image  # Заменяем изображение на клубнику
         for row in range(19):
             for column in range(19):
                 if (row == 7 or row == 8) and (column == 8 or column == 9 or column == 10):
                     continue
                 else:
-                    block = Block(cherry_color, 4, 4)
-                    pygame.draw.ellipse(block.image, cherry_color, [0, 0, 606, 606])
-
-                    block.image = cherry_image
-                    block.rect.x = (30 * column + 6) + 26
-                    block.rect.y = (30 * row + 6) + 26
+                    # Проверяем, является ли текущая ячейка стеной
+                    is_wall = any(
+                        wall.rect.collidepoint((30 * column + 6) + 26, (30 * row + 6) + 26) for wall in wall_list)
+                    if not is_wall:
+                        # Создаем и добавляем клубнику только если текущая ячейка не является стеной
+                        block = Block(cherry_color, 4, 4)
+                        pygame.draw.ellipse(block.image, cherry_color, [0, 0, 606, 606])
+                        block_image = pygame.transform.scale(strawberry_image, (10, 10))
+                        block = Block(cherry_color, 10, 10)
+                        block.image = block_image
+                        block.rect = block_image.get_rect()
+                        block.rect.x = (30 * column + 6) + 26
+                        block.rect.y = (30 * row + 6) + 26
+                        block_list.add(block)
+                        all_sprites_list.add(block)
 
                     b_collide = pygame.sprite.spritecollide(block, wall_list, False)
                     p_collide = pygame.sprite.spritecollide(block, pacman_collide, False)
@@ -443,6 +467,25 @@ def start_game():
             clock.tick(10)
 
     startGame()
+def show_instructions(screen):
+    background_image = pygame.image.load("img/instructions.jpg").convert()
+    screen.blit(background_image, (0, 0))
+    draw_text('Instructions', font, white, screen, 220, 200)
+    instructions = [
+        "Используйте стрелочки для передвижения.",
+        "Съешьте все вишни для победы.",
+        "При столкновении с врагом игра закончится.",
+        "Нажмите ESC для выхода в главное меню."
+    ]
+    y = 250
+    for instruction in instructions:
+        draw_text(instruction, font, white, screen, 50, y)
+
+        y += 30
+
+    draw_text('Press ESC to return to main menu', font, white, screen, 150, 500)
+    pygame.display.update()
+
 def main_menu(screen):
     background_image = pygame.image.load("img/main_menu5.jpg").convert()
 
@@ -452,24 +495,29 @@ def main_menu(screen):
 
         play_button = pygame.Rect(200, 200, 200, 50)
         top_scores_button = pygame.Rect(200, 270, 200, 50)
-        exit_button = pygame.Rect(200, 340, 200, 50)
+        instructions_button = pygame.Rect(200, 340, 200, 50)
+        exit_button = pygame.Rect(200, 410, 200, 50)
 
         mouse_pos = pygame.mouse.get_pos()
         play_highlighted = play_button.collidepoint(mouse_pos)
         top_scores_highlighted = top_scores_button.collidepoint(mouse_pos)
+        instructions_highlighted = instructions_button.collidepoint(mouse_pos)
         exit_highlighted = exit_button.collidepoint(mouse_pos)
 
         play_color = bright_green if play_highlighted else green
         top_scores_color = bright_yellow if top_scores_highlighted else yellow
+        instructions_color = bright_blue if instructions_highlighted else blue
         exit_color = bright_red if exit_highlighted else red
 
         pygame.draw.rect(screen, play_color, play_button)
         pygame.draw.rect(screen, top_scores_color, top_scores_button)
+        pygame.draw.rect(screen, instructions_color, instructions_button)
         pygame.draw.rect(screen, exit_color, exit_button)
 
         draw_text('Start', font, black, screen, 270, 210)
         draw_text('Top scores', font, black, screen, 240, 280)
-        draw_text('Exit', font, black, screen, 270, 350)
+        draw_text('Instructions', font, black, screen, 240, 350)  # Центрируем по центру кнопки
+        draw_text('Exit', font, black, screen, 270, 420)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -482,11 +530,18 @@ def main_menu(screen):
                     show_top_scores_screen(screen)
                     pygame.display.update()
                     wait_for_key()
+                elif instructions_button.collidepoint(mouse_pos):
+                    show_instructions(screen)
+                    pygame.display.update()
+                    wait_for_key()
                 elif exit_button.collidepoint(mouse_pos):
                     pygame.quit()
                     sys.exit()
 
         pygame.display.update()
+
+
+
 
 def wait_for_key():
     waiting = True
